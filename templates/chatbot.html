@@ -1,0 +1,70 @@
+{% extends "base.html" %}
+{% block title %}Chatbot Trái Cây{% endblock %}
+
+{% block content %}
+<h2 class="text-center mb-4">🤖 Trò chuyện với Trợ Lý Trái Cây</h2>
+
+<div class="d-flex justify-content-center">
+    <div class="card shadow p-3 w-100" style="max-width: 720px;">
+        <div id="chatBox" class="bg-light p-3 rounded" style="height: 400px; overflow-y: auto;"></div>
+
+        <div class="input-group mt-3">
+            <input type="text" id="userInput" class="form-control" placeholder="Hỏi về trái cây..." required>
+            <button class="btn btn-primary" type="button" onclick="sendMessage()">Gửi</button>
+        </div>
+    </div>
+</div>
+
+<script>
+    function appendMessage(sender, text, styleClass = '', id = null) {
+        const chatBox = document.getElementById("chatBox");
+        const msg = document.createElement("div");
+        msg.classList.add("mb-3");
+        msg.innerHTML = `
+            <div class="d-flex mb-1">
+                <div class="me-2"><span class="badge ${styleClass}">${sender}</span></div>
+                <div class="bg-white border rounded p-2 w-100">${text}</div>
+            </div>`;
+        if (id) msg.id = id;
+        chatBox.appendChild(msg);
+        chatBox.scrollTop = chatBox.scrollHeight;
+    }
+
+    function sendMessage() {
+        const input = document.getElementById("userInput");
+        const userText = input.value.trim();
+        if (!userText) return;
+
+        appendMessage("👤 Bạn", userText, "bg-primary");
+
+        // Thêm bubble Bot đang trả lời...
+        const loadingId = "bot-loading";
+        appendMessage("🤖 Bot", '<i class="fas fa-spinner fa-spin text-muted"></i> Đang trả lời...', "bg-secondary", loadingId);
+
+        fetch("/chat_api", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ message: userText })
+        })
+        .then(res => res.json())
+        .then(data => {
+            // Xóa bubble loading
+            const loadingMsg = document.getElementById(loadingId);
+            if (loadingMsg) loadingMsg.remove();
+
+            // Thêm phản hồi thật sự
+            appendMessage("🤖 Bot", data.response, "bg-success");
+        });
+
+        input.value = "";
+        input.focus();
+    }
+
+    document.getElementById("userInput").addEventListener("keypress", function (e) {
+        if (e.key === "Enter") {
+            e.preventDefault();
+            sendMessage();
+        }
+    });
+</script>
+{% endblock %}
